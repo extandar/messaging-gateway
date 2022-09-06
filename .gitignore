@@ -1,0 +1,12 @@
+# Node modules
+node_modules
+package-lock.json
+
+# Environment variables, never commit this file
+.env
+
+# Password and private notes of the project
+secrets.txt
+
+# Mac files
+.DS_Store
