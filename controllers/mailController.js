@@ -20,24 +20,26 @@ exports.enqueue = async function(req, res) {
 		
 		req.body.emisor = req.emisorId;
 
-		if(!req.body.to){
-			throw new HandledHtmlError("ToRequired", lang);
-		}
-		
 		if(!req.body.from){
 			throw new HandledHtmlError("FromRequired", lang);
 		}
-		
-		if(!req.body.subject){
-			throw new HandledHtmlError("SubjectRequired", lang);
-		}
-		
-		if(!req.body.text){
-			throw new HandledHtmlError("TextRequired", lang);
-		}
-		
-		if(!req.body.html){
-			req.body.html = req.body.text;
+
+		if(!req.body.template){
+			if(!req.body.to){
+				throw new HandledHtmlError("ToRequired", lang);
+			}
+			
+			if(!req.body.subject){
+				throw new HandledHtmlError("SubjectRequired", lang);
+			}
+			
+			if(!req.body.text){
+				throw new HandledHtmlError("TextRequired", lang);
+			}
+			
+			if(!req.body.html){
+				req.body.html = req.body.text;
+			}
 		}
 
 		let payload = req.body;
@@ -53,7 +55,6 @@ exports.enqueue = async function(req, res) {
 		res.json({ resultSet: message , message: 'ok' });
 
 	}catch(err){
-		
 		if(!(err instanceof HandledHtmlError)){
 			err = new HandledHtmlError('SomethingFailed', lang, err);
 		}

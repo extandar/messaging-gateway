@@ -22,10 +22,20 @@ const service = {
 		_new.status = 'queued';
 	
 		_new.priority = payload.priority;
-	
-		_new.to = payload.to;
-	
+		
 		_new.from = payload.from;
+		
+		_new.replyTo = payload.replyTo;
+
+		_new.to = payload.to;
+
+		_new.cc = payload.cc;
+
+		_new.bcc = payload.bcc;
+
+		_new.template = payload.template;
+
+		_new.templateData = payload.templateData;
 	
 		_new.subject = payload.subject;
 	

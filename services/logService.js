@@ -43,6 +43,10 @@ const service = {
 
 		if(errorTransport == 'console'){
 			console.error([level,eventCode,logData]);
+			if(data.stackTrace){
+				console.error(data.stackTrace);	
+			}
+			
 		}else{
 			this.log(level, eventCode, logData);
 		}

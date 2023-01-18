@@ -11,22 +11,48 @@ const service = {
 	send: async function (message) {
 
 		const lang = 'en';
-		const { _id, to, from, subject, text, html } = message;
+		const { _id, from, replyTo, to, cc, bcc, subject, text, html, template, templateData } = message;
 		
 
 		const msg = {
-		  to: to,
-		  from: from,
-		  subject: subject,
-		  text: text,
-		  html: html,
+			from: from,
+		  	to: to,
+		  	subject: subject,
+		  	text: text,
+		  	html: html,
 		};
+
+		if(replyTo && replyTo.email){
+			msg.replyTo = replyTo
+		}
+
+		if(cc && cc.length>0){
+			msg.cc = cc
+		}
+
+		if(bcc && bcc.length>0){
+			msg.bcc = bcc
+		}
+
+		if(template){
+			msg.template_id = template
+			msg.personalizations = [
+				{
+					to: to,
+					dynamic_template_data: templateData
+
+				}
+			]
+		}
 
 		message.events.push({
 			status:  'sent',
 			date: new Date()
 		})
 		message.status = 'sent';
+
+		//console.log(msg)
+		
 		await message.save();
 
 		//ES6
