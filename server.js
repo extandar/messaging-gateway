@@ -1,3 +1,4 @@
+require('dotenv').config()
 const package_json = require('./package.json')
 const app = require('./app');
 const routes = require('./routes/core.routes');
