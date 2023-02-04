@@ -33,7 +33,7 @@ const service = {
 		    },
 		  });
 
-		const fromSMTP = from.name?`"${from.name}" <${from.email}>`:`from.email`;
+		const fromSMTP = from.name?`"${from.name}" <${from.email}>`:from.email;
 		
 		let recipients = []
 		for(let recipient of to){
