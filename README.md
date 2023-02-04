@@ -59,3 +59,23 @@ This microservice allows you to centralize tasks of to send messages by email an
 - MAIL_DEFAULT_PROVIDER=
 - SENDGRID_API_KEY=
 - DAEMON_DELAY_TIME=
+
+## Verify
+
+```bash
+curl  http://127.0.0.1:PORT/api/messenger/ping
+```
+
+## Example
+```
+
+curl  -H "Content-Type: application/json" \
+-H "X-API-KEY: THISISMYAPIKEY" \
+-d '{ "from": { "email":"peter@example.com","name":"Peter Example" },
+	"to": { "email":"joan@example.com" },
+	"subject":"Testing my email gateway",
+	"text":"Hello from the gateway","html":"<h1>Hello from the gateway</h1>" }' \
+-X POST http://127.0.0.1:PORT/api/messenger/mail/enqueue
+
+```
+

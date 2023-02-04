@@ -1,22 +1,50 @@
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+"use strict";
+const nodemailer = require("nodemailer");
 
 const LogService = require('../logService');
 const HandledHtmlError = require('../../exceptions/HandledHtmlError');
 
 const { MailSent } = require('../../models');
 
+const PROVIDER = 'smtp';
+const SMTP_SENDER_USER = process.env.SMTP_SENDER_USER;
+const SMTP_SENDER_PASSWORD = process.env.SMTP_SENDER_PASSWORD;
+const SMTP_SENDER_HOST = process.env.SMTP_SENDER_HOST;
+const SMTP_SENDER_PORT = process.env.SMTP_SENDER_PORT;
+
+
 const service = {
 
 	send: async function (message) {
+
+		console.log("Sending from SMTP provider");
 
 		const lang = 'en';
 		const { _id, from, replyTo, to, cc, bcc, subject, text, html, template, templateData } = message;
 		
 
+		let transporter = nodemailer.createTransport({
+		    host: SMTP_SENDER_HOST,
+		    port: SMTP_SENDER_PORT,
+		    secure: true, // true for 465, false for other ports
+		    auth: {
+		      user: SMTP_SENDER_USER,
+		      pass: SMTP_SENDER_PASSWORD,
+		    },
+		  });
+
+		const fromSMTP = `"${from.name}" <${from.email}>`;
+		
+		let recipients = []
+		for(let recipient of to){
+			recipients.push(recipient.email);
+		}
+
+		const toSMTP = recipients.join(',');
+
 		const msg = {
-			from: from,
-		  	to: to,
+			from: fromSMTP.trim(),
+		  	to: toSMTP.trim(),
 		  	subject: subject,
 		  	text: text,
 		  	html: html,
@@ -34,16 +62,6 @@ const service = {
 			msg.bcc = bcc
 		}
 
-		if(template){
-			msg.template_id = template
-			msg.personalizations = [
-				{
-					to: to,
-					dynamic_template_data: templateData
-
-				}
-			]
-		}
 
 		message.events.push({
 			status:  'sent',
@@ -51,13 +69,25 @@ const service = {
 		})
 		message.status = 'sent';
 
-		//console.log(msg)
+		console.log(msg)
 		
 		await message.save();
 
-		//ES6
-		await sgMail
-		  .send(msg)
+		
+		
+		/*
+		// verify connection configuration
+		transporter.verify(function (error, success) {
+		  if (error) {
+		    console.log(error);
+		  } else {
+		    console.log("Server is ready to take our messages");
+		  }
+		});
+		*/
+
+		await transporter
+		  .sendMail(msg)
 		  .then( async (response) => {
 
 			  	try{
@@ -72,17 +102,19 @@ const service = {
 					delete messageCopy._id;
 
 					let sent = new MailSent(messageCopy);
-					sent.provider = 'sendgrid';
+					sent.provider = PROVIDER;
 					await sent.save();
 					await message.delete();
 
-			  		LogService.debug("Mensaje enviado por Sendgrid", 'MailSentBySendgrid' , null, response);
+			  		LogService.debug("Mensaje enviado por SMTP", 'MailSentBySMTP' , null, response);
 			  	}catch(err){
 			  		console.error(err);
 			  	}
 		  		
 		  	}, async (error) => {
 		  		
+		  		console.log("Error enviando por SMTP");
+		  		console.log(error);
 		  		try{
 		  			message.events.push({
 						status:  'errored',
@@ -95,7 +127,7 @@ const service = {
 					delete messageCopy._id;
 
 					let sent = new MailSent(messageCopy);
-					sent.provider = 'sendgrid';
+					sent.provider = PROVIDER;
 					await sent.save();
 					await message.delete();
 
@@ -111,6 +143,7 @@ const service = {
 		  		
 
 		  });
+	
 
 	  	
 	},
@@ -118,6 +151,3 @@ const service = {
 }
  
 module.exports = service;
-
-
-

@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const secret = process.env.SECRET_KEY;
 
-const masterKey = process.env.MASTER_KEY;
 const HandledHtmlError = require('../exceptions/HandledHtmlError');
 const LogService = require('../services/logService');
 

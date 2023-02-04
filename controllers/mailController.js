@@ -18,6 +18,8 @@ exports.enqueue = async function(req, res) {
 			throw new HandledHtmlError("EmisorRequired", lang);
 		}
 		
+		console.log(req.body)
+
 		req.body.emisor = req.emisorId;
 
 		if(!req.body.from){
