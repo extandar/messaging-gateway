@@ -64,7 +64,7 @@ const service = {
 			  		message.events.push({
 						status:  'delivered',
 						date: new Date(),
-						infor: response
+						info: response
 					})
 					message.status = 'delivered';
 
@@ -75,7 +75,6 @@ const service = {
 					sent.provider = 'sendgrid';
 					await sent.save();
 					await message.delete();
-
 
 			  		LogService.debug("Mensaje enviado por Sendgrid", 'MailSentBySendgrid' , null, response);
 			  	}catch(err){
