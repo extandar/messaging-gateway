@@ -33,11 +33,11 @@ const service = {
 		    },
 		  });
 
-		const fromSMTP = `"${from.name}" <${from.email}>`;
+		const fromSMTP = from.name?`"${from.name}" <${from.email}>`:`from.email`;
 		
 		let recipients = []
 		for(let recipient of to){
-			recipients.push(recipient.email);
+			recipients.push(recipient.email.trim());
 		}
 
 		const toSMTP = recipients.join(',');

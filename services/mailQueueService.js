@@ -4,7 +4,7 @@
 const { Emisor, MailQueued, MailSent } = require('../models');
 const MAIL_DEFAULT_PROVIDER = process.env.MAIL_DEFAULT_PROVIDER;
 const MailProvider = require(`./providers/${MAIL_DEFAULT_PROVIDER}`);
-//const MailProvider = require(`./providers/sendgrid.mail`);
+
 var mailServiceStatus = require('../services/mailServiceStatus.js');
 
 const service = {
