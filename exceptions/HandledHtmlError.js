@@ -1,17 +1,19 @@
-
 const errors = require('./errors');
 
 class HandledHtmlError extends Error {
 	
-	constructor(errorCode = "SomethingFailed", language = 'en', stackTrace) {
+	constructor(errorCode = "SomethingFailed", language = 'en', previousError) {
 		
+		if(previousError && previousError instanceof HandledHtmlError){
+			return previousError;
+		}
+
 		let error = errors.find(element => {
 			return element.errorCode == errorCode;
 		})
 
 		//Fallback if passed errorCode was not found
 		if(!error){
-			console.log("Not found error: "+errorCode);
 			error = errors.find(element => {
 				return element.errorCode == 'SomethingFailed';
 			})
@@ -22,7 +24,7 @@ class HandledHtmlError extends Error {
 		super(message);
 		this.htmlCode = error.htmlCode;
 		this.errorCode = error.errorCode;
-		this.stackTrace = stackTrace;
+		this.previousError = previousError;
 	}
 
 }

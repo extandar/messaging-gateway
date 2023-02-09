@@ -1,7 +1,10 @@
 "use strict";
+
 const nodemailer = require("nodemailer");
 
 const LogService = require('../logService');
+const passwordService = require('../passwordService');
+
 const HandledHtmlError = require('../../exceptions/HandledHtmlError');
 
 const { MailSent } = require('../../models');
@@ -12,26 +15,145 @@ const SMTP_SENDER_PASSWORD = process.env.SMTP_SENDER_PASSWORD;
 const SMTP_SENDER_HOST = process.env.SMTP_SENDER_HOST;
 const SMTP_SENDER_PORT = process.env.SMTP_SENDER_PORT;
 
+const EmisorService = require('../emisorService');
 
 const service = {
 
-	send: async function (message) {
+	send: function (message) {
 
-		console.log("Sending from SMTP provider");
-
-		const lang = 'en';
-		const { _id, from, replyTo, to, cc, bcc, subject, text, html, template, templateData } = message;
+		console.log("Sending from SMTP provider...");
 		
+		const lang = 'en';
+		const { messageId, apiKey, from, replyTo, to, cc, bcc, subject, text, html } = message;
+		
+		return new Promise((resolve, reject) => {
 
-		let transporter = nodemailer.createTransport({
+			EmisorService.getApiKey(apiKey)
+				.then( apiKey =>{
+				
+					let transporter  = this.prepareTransport(apiKey.emailSender.email, apiKey.emailSender.password)
+					let smtpMsg = this.prepareSmtpMessage(message);
+					
+					message = this.processSentMessage(message);
+
+					transporter
+				  	.sendMail(smtpMsg)
+				  	.then( (response) => {
+					  	
+					  	try{
+
+					  		LogService.debug('Message delivered by smtp:'+messageId, null, null, response);
+
+					  		message.events.push({
+								status:  'delivered',
+								date: new Date(),
+								info: response
+							})
+							message.status = 'delivered';
+							message.messageIdProvider = response.messageId;
+
+							let messageCopy = message.toJSON();
+							delete messageCopy._id;
+
+							let sent = new MailSent(messageCopy);
+							sent.save()
+								.then( (createdDocument) => {
+
+									message.delete()
+										.then( (deletedDocument) =>{
+											resolve(response);
+										})
+										.catch(error => {
+											LogService.error('Error deleting delivered MailQueued:'+messageId, null, null, error);
+											reject(error);
+										})
+
+								})
+								.catch(error=>{
+									LogService.error('Error saving delivered MailSent:'+messageId, null, null, error);
+									reject(error);
+								})
+							
+
+					  	}catch(error){
+					  		LogService.error('Error processing smpt response:'+messageId, null, null, error);
+					  		reject(error);
+					  	}
+
+
+				  	})
+				  	.catch( error => {
+
+				  		try{
+
+				  			LogService.error('Error sending smtp:'+messageId, null, null, error);
+
+				  			message.events.push({
+								status:  'errored',
+								date: new Date(),
+								info: error
+							})
+							message.status = 'errored';
+
+							let messageCopy = message.toJSON();
+							delete messageCopy._id;
+
+							let sent = new MailSent(messageCopy);
+							sent.save()
+								.then( (createdDocument) => {
+
+									message.delete()
+										.then( (deletedDocument) => {
+											reject(error);
+										})
+										.catch(error => {
+											LogService.error('Error deleting errored MailQueued:'+messageId, null, null, error);
+											reject(error);
+										})
+
+								})
+								.catch(error => {
+									LogService.error('Error saving errored MailSent:'+messageId, null, null, error);
+									reject(error);
+								})
+
+				  		}catch(error){
+				  			LogService.error('Error processing smpt error:'+messageId, null, null, error);
+				  			reject(error);
+				  		}
+				  		
+				  	})
+				})
+				.catch( error => {
+					LogService.error('Error retrieving apiKey:'+messageId, null, null, error);
+					//TODO - If apiKey not founded process message like errored
+					reject(error);
+				})
+
+		});
+
+	},
+
+	prepareTransport : function (user, password){
+
+		let decryptedPassword = passwordService.decrypt(password);
+
+		const transporter = nodemailer.createTransport({
 		    host: SMTP_SENDER_HOST,
 		    port: SMTP_SENDER_PORT,
 		    secure: true, // true for 465, false for other ports
 		    auth: {
-		      user: SMTP_SENDER_USER,
-		      pass: SMTP_SENDER_PASSWORD,
+		      user: user,
+		      pass: decryptedPassword,
 		    },
 		  });
+		return transporter
+
+	},
+
+	prepareSmtpMessage : function (message){
+
+		const { messageId, apiKey, from, replyTo, to, cc, bcc, subject, text, html } = message;
 
 		const fromSMTP = from.name?`"${from.name}" <${from.email}>`:from.email;
 		
@@ -42,7 +164,7 @@ const service = {
 
 		const toSMTP = recipients.join(',');
 
-		const msg = {
+		let msg = {
 			from: fromSMTP.trim(),
 		  	to: toSMTP.trim(),
 		  	subject: subject,
@@ -62,91 +184,31 @@ const service = {
 			msg.bcc = bcc
 		}
 
+		return msg;
 
+	},
+
+	processSentMessage : function (message){
+		
 		message.events.push({
 			status:  'sent',
 			date: new Date()
 		})
+
 		message.status = 'sent';
-
-		console.log(msg)
 		
-		await message.save();
+		message.save()
+			.then(( document )=>{
+				LogService.debug('Message sent for delivery smtp:'+message.messageId);
+			})
+			.catch(error=>{
+				LogService.error('Error saving sent MailSent:'+message.messageId, null, null, error);
+			})
 
-		
-		
-		/*
-		// verify connection configuration
-		transporter.verify(function (error, success) {
-		  if (error) {
-		    console.log(error);
-		  } else {
-		    console.log("Server is ready to take our messages");
-		  }
-		});
-		*/
-
-		await transporter
-		  .sendMail(msg)
-		  .then( async (response) => {
-
-			  	try{
-			  		message.events.push({
-						status:  'delivered',
-						date: new Date(),
-						info: response
-					})
-					message.status = 'delivered';
-
-					let messageCopy = message.toJSON();
-					delete messageCopy._id;
-
-					let sent = new MailSent(messageCopy);
-					sent.provider = PROVIDER;
-					await sent.save();
-					await message.delete();
-
-			  		LogService.debug("Mensaje enviado por SMTP", 'MailSentBySMTP' , null, response);
-			  	}catch(err){
-			  		console.error(err);
-			  	}
-		  		
-		  	}, async (error) => {
-		  		
-		  		console.log("Error enviando por SMTP");
-		  		console.log(error);
-		  		try{
-		  			message.events.push({
-						status:  'errored',
-						date: new Date(),
-						info: error
-					})
-					message.status = 'errored';
-
-					let messageCopy = message.toJSON();
-					delete messageCopy._id;
-
-					let sent = new MailSent(messageCopy);
-					sent.provider = PROVIDER;
-					await sent.save();
-					await message.delete();
-
-			    	let err = new HandledHtmlError('ProviderError', lang, error);
-				    if (error.response) {
-	          			LogService.error(err.message, err.errorCode, null, error.response.body);
-				    }else{
-				    	LogService.error(err.message, err.errorCode, null, error);
-				    }
-		  		}catch(err){
-		  			console.error(err);
-		  		}
-		  		
-
-		  });
-	
-
-	  	
+		return message;
 	},
+
+
 
 }
  

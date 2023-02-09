@@ -58,7 +58,7 @@ const service = {
 		
 		await message.save();
 
-		/*
+		
 		//ES6
 		await sgMail
 		  .send(msg)
@@ -115,9 +115,7 @@ const service = {
 		  		
 
 		  });
-		  */
 
-	  	
 	},
 
 }

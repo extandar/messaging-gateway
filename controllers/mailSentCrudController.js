@@ -1,96 +1,323 @@
 
-
-const { MailSent } = require('../models');
+const MailSentCrudService = require('../services/mailSentCrudService');
 const HandledHtmlError = require('../exceptions/HandledHtmlError');
 const LogService = require('../services/logService');
 
 /*
-* 	Must access by POST method
+* 	Must access by GET method
 *	Execute a query in the collection MailSent
 *	filter is Object
-* 	limit is an Integer
-* 	test: curl -d '{"filter":{}, "limit":"20"}' -H "Content-Type: application/json" -X POST http://localhost:PORT/mailSent
+* 	limit is an Number
 */
 
-exports.viewListMailSent = function(req, res) {
+exports.getAllMailSents = function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
 
 	try{
-
-		let filter = req.body.filter || {};
-
-		let limit = req.body.limit * 1 || 100;
-
-		let q = MailSent.find(filter).limit(limit);
-
-		q.exec(function(err, data) {
-		    if (err) {
-		    	
-				let	err = new HandledHtmlError('SomethingFailed', lang, err);
-				LogService.error(err.message, err.errorCode, req, err);
-				res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
-
-		    }else{
-
-		    	if(data){
-		    		LogService.debug("Found :"+data.length+" rows");
-		    		res.json({ resultSet: data, message: 'ok' });	
-		    	}else{
-		    		res.json({ resultSet:[], message: 'No data' });
-		    	}
-		    	
-		    }
-	  	});
-
-  	}catch(err){
-  		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
+	
+		let options = {
+			filter : req.params.filter || {},
+			limit : ( req.params.limit * 1 ) || 100
 		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+
+		MailSentCrudService.getAllMailSents(options)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
 
 };
 
 /*
 *  Search one MailSent by id
-*  test: curl -X GET http://localhost:PORT/mailSent/ID
 */
-exports.viewOneMailSent = function(req, res) {
+exports.getOneMailSent = function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
 
 	try{
 
-		let id = req.params.id;
+		const id = req.params.id;
 
 		if(!id){
 			throw new HandledHtmlError("IdRequired", lang);
 		}
 
-		MailSent.findOne({ _id:id },function(err, data) {
-		    if (err) {
+		MailSentCrudService.getOneMailSent({ _id:id })
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
 
-		    	let	err = new HandledHtmlError('SomethingFailed', lang, err);
-				LogService.error(err.message, err.errorCode, req, err);
-				res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+	}catch(error){
 
-		    }else{
-
-		    	if(data){
-			    	res.json({ resultSet: data, message: 'ok' });
-		    	}else{
-		    		res.json({ message: 'No data' });
-		    	}
-		    }
-	  	})
-
-  	}catch(err){
-		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
-		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
+
 };
+
+
+/*
+*	Create one MailSent
+*/
+
+exports.createOneMailSent = function(req, res) {	
+
+	const lang = req.lang;
+	
+	const { body } = req;
+
+	try{
+
+		
+		if(!body.emisor){
+			throw new HandledHtmlError("EmisorRequired", lang);
+		}
+			
+		let payload = {};
+			
+		if(body.emisor){
+			payload.emisor = body.emisor;
+		}
+				
+		if(body.status){
+			payload.status = body.status;
+		}
+				
+		if(body.priority){
+			payload.priority = body.priority;
+		}
+				
+		if(body.provider){
+			payload.provider = body.provider;
+		}
+				
+		if(body.messageIdProvider){
+			payload.messageIdProvider = body.messageIdProvider;
+		}
+				
+		if(body.to){
+			payload.to = body.to;
+		}
+				
+		if(body.cc){
+			payload.cc = body.cc;
+		}
+				
+		if(body.bcc){
+			payload.bcc = body.bcc;
+		}
+				
+		if(body.subject){
+			payload.subject = body.subject;
+		}
+				
+		if(body.text){
+			payload.text = body.text;
+		}
+				
+		if(body.html){
+			payload.html = body.html;
+		}
+				
+		if(body.attachments){
+			payload.attachments = body.attachments;
+		}
+				
+		if(body.schedule){
+			payload.schedule = body.schedule;
+		}
+				
+		if(body.template){
+			payload.template = body.template;
+		}
+				
+		if(body.templateData){
+			payload.templateData = body.templateData;
+		}
+				
+		if(body.events){
+			payload.events = body.events;
+		}
+		
+	MailSentCrudService.createOneMailSent(payload)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+	}	
+
+};
+
+
+/*
+*	Update one MailSent
+*/
+exports.updateOneMailSent = async function(req, res) {
+
+	const lang = req.lang;
+
+	const { body } = req;
+
+	try{
+
+
+		const id = req.params.id;
+
+		if(!id){
+			throw new HandledHtmlError("IdRequired", lang);
+		}
+
+		let payload = {};
+
+			
+		if(body.emisor){
+			payload.emisor = body.emisor;
+		}
+				
+		if(body.status){
+			payload.status = body.status;
+		}
+				
+		if(body.priority){
+			payload.priority = body.priority;
+		}
+				
+		if(body.provider){
+			payload.provider = body.provider;
+		}
+				
+		if(body.messageIdProvider){
+			payload.messageIdProvider = body.messageIdProvider;
+		}
+				
+		if(body.to){
+			payload.to = body.to;
+		}
+				
+		if(body.cc){
+			payload.cc = body.cc;
+		}
+				
+		if(body.bcc){
+			payload.bcc = body.bcc;
+		}
+				
+		if(body.subject){
+			payload.subject = body.subject;
+		}
+				
+		if(body.text){
+			payload.text = body.text;
+		}
+				
+		if(body.html){
+			payload.html = body.html;
+		}
+				
+		if(body.attachments){
+			payload.attachments = body.attachments;
+		}
+				
+		if(body.schedule){
+			payload.schedule = body.schedule;
+		}
+				
+		if(body.template){
+			payload.template = body.template;
+		}
+				
+		if(body.templateData){
+			payload.templateData = body.templateData;
+		}
+				
+		if(body.events){
+			payload.events = body.events;
+		}
+		
+	MailSentCrudService.updateOneMailSent(id, payload)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+	}
+
+};
+
+
+/*
+*	Delete one MailSent
+*/
+exports.deleteOneMailSent = function(req, res) {
+
+	const lang = req.lang;
+
+	const { body } = req;
+
+	try {
+		const id = req.params.id;
+
+		if(!id){
+			throw new HandledHtmlError("IdRequired", lang);
+		}
+	
+	MailSentCrudService.deleteOneMailSent(id)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+	}
+
+};
+

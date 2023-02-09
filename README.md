@@ -59,6 +59,10 @@ This microservice allows you to centralize tasks of to send messages by email an
 - MAIL_DEFAULT_PROVIDER=
 - SENDGRID_API_KEY=
 - DAEMON_DELAY_TIME=
+- SMTP_SENDER_HOST=
+- SMTP_SENDER_PORT=
+- SMTP_SENDER_USER=
+- SMTP_SENDER_PASSWORD=
 
 ## Verify
 

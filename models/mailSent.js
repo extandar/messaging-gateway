@@ -3,10 +3,14 @@ var mongoose = require('mongoose');
 const schema = new mongoose.Schema(
 	{
 		
+		messageId: { type: String, trim: true, unique: true },
 		emisor: { type: mongoose.ObjectId, required: true, ref:"Emisor" },
-		messageId: { type: String, trim: true, index: true },
+		
 		status: { type: String, enum:['queued','sent','delivered','errored'], index: true },
 		priority: { type: String, enum: ['high', 'medium', 'low'] },
+
+		provider: { type: String, trim: true },
+		messageIdProvider: { type: String, trim: true, index: true },
 
 		from: {
 			email: { type: String, trim: true, required: true, index: true },
@@ -53,7 +57,7 @@ const schema = new mongoose.Schema(
 			{
 				status:  { type: String, enum:['queued','sent','delivered','errored'] },
 				date: { type: Date },
-				info: { type: String },
+				info: { type: mongoose.Mixed }
 			}
 		],
 	},

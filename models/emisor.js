@@ -3,16 +3,26 @@ var mongoose = require('mongoose');
 const schema = new mongoose.Schema(
 	{
 		
-		appCode: { type: String, trim: true, unique: true },
-		quota: { type: Number, default: 0 },
+		title: { type: String, trim: true },
+
 		isActive: { type: Boolean, default: true },
-		allowedDomains: [{ type: String, trim: true }],
-		defaultSender: { type: String, trim: true, required: true },
 		
 		apiKeys: [
 			{
+				key: { type: String, trim: true, unique: true },
 				title: { type: String, trim: true },
-				key: { type: String, trim: true },
+
+				//Email settings
+
+				emailProviders: [{ type: String, trim: true }],
+				defaultEmailProvider: { type: String, trim: true },
+
+				emailSender: {
+					name: { type: String, trim: true },
+					email: { type: String, trim: true },
+					password: { type: String, trim: true }, //Needed for smtp authentication
+				},
+
 			}
 		],
 

@@ -9,55 +9,6 @@ var mailServiceStatus = require('../services/mailServiceStatus.js');
 
 const service = {
 
-	/*
-	*  Create a document MailQueued
-	*/
-	create: async function (payload) {
-
-		
-		let _new = new MailQueued();
-		
-		_new.emisor = payload.emisor;
-		
-		_new.status = 'queued';
-	
-		_new.priority = payload.priority;
-		
-		_new.from = payload.from;
-		
-		_new.replyTo = payload.replyTo;
-
-		_new.to = payload.to;
-
-		_new.cc = payload.cc;
-
-		_new.bcc = payload.bcc;
-
-		_new.template = payload.template;
-
-		_new.templateData = payload.templateData;
-	
-		_new.subject = payload.subject;
-	
-		_new.text = payload.text;
-		
-		_new.html = payload.html;
-
-		_new.provider = payload.provider;
-
-		_new.schedule = payload.schedule;
-
-		_new.events = [];
-		
-		_new.events.push({
-			status:  'queued',
-			date: new Date()
-		})
-		
-		_new = await _new.save();
-
-		return _new;
-	},
 
 	getNextMessage: async function () {
 
@@ -90,6 +41,8 @@ const service = {
 
 	processQueue: async function () {
 	  	
+	  	console.log("processing queue...");
+	  	
 	  	if(mailServiceStatus.getCurrentStatus()=='busy'){
 	  		return;
 	  	}
@@ -101,7 +54,9 @@ const service = {
 	  	while(message){
 
 	  		//send the message
-	  		await MailProvider.send(message);
+	  		await MailProvider.send(message)
+	  			.then( ()=>{})
+	  			.catch( (error)=>{})
 
 	  		//Look for another email
 			message = await this.getNextMessage();

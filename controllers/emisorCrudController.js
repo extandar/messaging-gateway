@@ -1,127 +1,125 @@
 
-
-const { Emisor } = require('../models');
-const EmisorCrudService = require('../services/crud/emisorCrudService');
+const EmisorCrudService = require('../services/emisorCrudService');
 const HandledHtmlError = require('../exceptions/HandledHtmlError');
 const LogService = require('../services/logService');
 
 /*
-* 	Must access by POST method
+* 	Must access by GET method
 *	Execute a query in the collection Emisor
 *	filter is Object
-* 	limit is an Integer
-* 	test: curl -d '{"filter":{}, "limit":"20"}' -H "Content-Type: application/json" -X POST http://localhost:PORT/emisor
+* 	limit is an Number
 */
 
-exports.viewListEmisor = function(req, res) {
+exports.getAllEmisors = function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
 
 	try{
-
-		let filter = req.body.filter || {};
-
-		let limit = req.body.limit * 1 || 100;
-
-		let q = Emisor.find(filter).limit(limit);
-
-		q.exec(function(err, data) {
-		    if (err) {
-		    	
-				let	err = new HandledHtmlError('SomethingFailed', lang, err);
-				LogService.error(err.message, err.errorCode, req, err);
-				res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
-
-		    }else{
-
-		    	if(data){
-		    		LogService.debug("Found :"+data.length+" rows");
-		    		res.json({ resultSet: data, message: 'ok' });	
-		    	}else{
-		    		res.json({ resultSet:[], message: 'No data' });
-		    	}
-		    	
-		    }
-	  	});
-
-  	}catch(err){
-  		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
+	
+		let options = {
+			filter : req.params.filter || {},
+			limit : ( req.params.limit * 1 ) || 100
 		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+
+		EmisorCrudService.getAllEmisors(options)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
 
 };
 
 /*
 *  Search one Emisor by id
-*  test: curl -X GET http://localhost:PORT/emisor/ID
 */
-exports.viewOneEmisor = function(req, res) {
+exports.getOneEmisor = function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
 
 	try{
 
-		let id = req.params.id;
+		const id = req.params.id;
 
 		if(!id){
 			throw new HandledHtmlError("IdRequired", lang);
 		}
 
-		Emisor.findOne({ _id:id },function(err, data) {
-		    if (err) {
+		EmisorCrudService.getOneEmisor({ _id:id })
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
 
-		    	let	err = new HandledHtmlError('SomethingFailed', lang, err);
-				LogService.error(err.message, err.errorCode, req, err);
-				res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+	}catch(error){
 
-		    }else{
-
-		    	if(data){
-			    	res.json({ resultSet: data, message: 'ok' });
-		    	}else{
-		    		res.json({ message: 'No data' });
-		    	}
-		    }
-	  	})
-
-  	}catch(err){
-		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
-		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
+
 };
 
 
 /*
 *	Create one Emisor
 */
-exports.createOneEmisor = async function(req, res) {	
 
-	const lang = req.body.language;
+exports.createOneEmisor = function(req, res) {	
+
+	const lang = req.lang;
+	
+	const { body } = req;
 
 	try{
 
+
+		let payload = {};
+			
+		if(body.title){
+			payload.title = body.title;
+		}
+				
+		if(body.isActive){
+			payload.isActive = body.isActive;
+		}
+				
+		if(body.apiKeys){
+			payload.apiKeys = body.apiKeys;
+		}
 		
-		if(!req.body.defaultSender){
-			throw new HandledHtmlError("DefaultSenderRequired", lang);
-		}
+	EmisorCrudService.createOneEmisor(payload)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
 
-		let _new = await EmisorCrudService.create(req.body);
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
 
-		res.json({ resultSet: _new, message: 'ok' });
+	}catch(error){
 
-	}catch(err){
-		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
-		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
-	}
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+	}	
 
 };
 
@@ -131,24 +129,49 @@ exports.createOneEmisor = async function(req, res) {
 */
 exports.updateOneEmisor = async function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
+
+	const { body } = req;
 
 	try{
 
-		if(!req.body._id){
+
+		const id = req.params.id;
+
+		if(!id){
 			throw new HandledHtmlError("IdRequired", lang);
 		}
 
-		let updatedDocument = await EmisorCrudService.update(req.body);
+		let payload = {};
 
-		res.json({ resultSet: updatedDocument, message: 'ok' });
-
-	}catch(err){
-		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
+			
+		if(body.title){
+			payload.title = body.title;
 		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+				
+		if(body.isActive){
+			payload.isActive = body.isActive;
+		}
+				
+		if(body.apiKeys){
+			payload.apiKeys = body.apiKeys;
+		}
+		
+	EmisorCrudService.updateOneEmisor(id, payload)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
+
+	}catch(error){
+
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
 
 };
@@ -157,27 +180,36 @@ exports.updateOneEmisor = async function(req, res) {
 /*
 *	Delete one Emisor
 */
-exports.removeOneEmisor = async function(req, res) {
+exports.deleteOneEmisor = function(req, res) {
 
-	const lang = req.body.language;
+	const lang = req.lang;
 
-	try{
+	const { body } = req;
 
-		if(!req.body._id){
+	try {
+		const id = req.params.id;
+
+		if(!id){
 			throw new HandledHtmlError("IdRequired", lang);
 		}
+	
+	EmisorCrudService.deleteOneEmisor(id)
+		.then(data =>{
+			res.json({ resultSet: data, status: 'OK' });
+		})
+		.catch(error=>{
 
-		let deletedDocument = await EmisorCrudService.delete(req.body);
+			error = new HandledHtmlError('SomethingFailed', lang, error);
+			LogService.error(error.message, error.errorCode, req, error);
+			res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
+		})
 
-		res.json({ resultSet: deletedDocument, message: 'ok' });
+	}catch(error){
 
-	}catch(err){
-		if(!(err instanceof HandledHtmlError)){
-			err = new HandledHtmlError('SomethingFailed', lang, err);
-		}
-		LogService.error(err.message, err.errorCode, req, err);
-		res.status(err.htmlCode).send({ message: err.message, errorCode: err.errorCode });
+		error = new HandledHtmlError('SomethingFailed', lang, error);
+		LogService.error(error.message, error.errorCode, req, error);
+		res.status(error.htmlCode).send({ status: "FAILED", message: error.message, code: error.errorCode });
 	}
-};
 
+};
 
