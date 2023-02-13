@@ -10,10 +10,6 @@ const HandledHtmlError = require('../../exceptions/HandledHtmlError');
 const { MailSent } = require('../../models');
 
 const PROVIDER = 'smtp';
-const SMTP_SENDER_USER = process.env.SMTP_SENDER_USER;
-const SMTP_SENDER_PASSWORD = process.env.SMTP_SENDER_PASSWORD;
-const SMTP_SENDER_HOST = process.env.SMTP_SENDER_HOST;
-const SMTP_SENDER_PORT = process.env.SMTP_SENDER_PORT;
 
 const EmisorService = require('../emisorService');
 
@@ -31,7 +27,7 @@ const service = {
 			EmisorService.getApiKey(apiKey)
 				.then( apiKey =>{
 				
-					let transporter  = this.prepareTransport(apiKey.emailSender.email, apiKey.emailSender.password)
+					let transporter  = this.prepareTransport(apiKey.emailSender);
 					let smtpMsg = this.prepareSmtpMessage(message);
 					
 					message = this.processSentMessage(message);
@@ -134,16 +130,16 @@ const service = {
 
 	},
 
-	prepareTransport : function (user, password){
+	prepareTransport : function (payload){
 
-		let decryptedPassword = passwordService.decrypt(password);
+		let decryptedPassword = passwordService.decrypt(payload.password);
 
 		const transporter = nodemailer.createTransport({
-		    host: SMTP_SENDER_HOST,
-		    port: SMTP_SENDER_PORT,
+		    host: payload.host,
+		    port: payload.port,
 		    secure: true, // true for 465, false for other ports
 		    auth: {
-		      user: user,
+		      user: payload.email,
 		      pass: decryptedPassword,
 		    },
 		  });
@@ -163,6 +159,8 @@ const service = {
 		}
 
 		const toSMTP = recipients.join(',');
+
+		//console.log(text)
 
 		let msg = {
 			from: fromSMTP.trim(),

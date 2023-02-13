@@ -95,6 +95,10 @@ exports.createOneMailQueued = function(req, res) {
 			
 		let payload = {};
 			
+		if(body.messageId){
+			payload.messageId = body.messageId;
+		}
+				
 		if(body.emisor){
 			payload.emisor = body.emisor;
 		}
@@ -117,6 +121,14 @@ exports.createOneMailQueued = function(req, res) {
 				
 		if(body.messageIdProvider){
 			payload.messageIdProvider = body.messageIdProvider;
+		}
+				
+		if(body.from){
+			payload.from = body.from;
+		}
+				
+		if(body.replyTo){
+			payload.replyTo = body.replyTo;
 		}
 				
 		if(body.to){
@@ -205,6 +217,10 @@ exports.updateOneMailQueued = async function(req, res) {
 		let payload = {};
 
 			
+		if(body.messageId){
+			payload.messageId = body.messageId;
+		}
+				
 		if(body.emisor){
 			payload.emisor = body.emisor;
 		}
@@ -227,6 +243,14 @@ exports.updateOneMailQueued = async function(req, res) {
 				
 		if(body.messageIdProvider){
 			payload.messageIdProvider = body.messageIdProvider;
+		}
+				
+		if(body.from){
+			payload.from = body.from;
+		}
+				
+		if(body.replyTo){
+			payload.replyTo = body.replyTo;
 		}
 				
 		if(body.to){

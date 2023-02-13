@@ -7,6 +7,7 @@ package-lock.json
 
 # Password and private notes of the project
 secrets.txt
+secrets.md
 
 # Mac files
 .DS_Store
