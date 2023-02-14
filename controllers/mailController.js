@@ -20,7 +20,7 @@ exports.enqueue = function(req, res) {
 		}
 
 		const { body } = req;
-console.log(body);
+
 		if(!body.from || !body.from.email){
 			throw new HandledHtmlError("FromRequired", lang);
 		}
@@ -83,7 +83,9 @@ console.log(body);
 			}
 			
 		}else{
-			payload.provider = apiKey.defaultEmailProvider;
+			
+			//Selecte the first one provider like the default
+			payload.provider = apiKey.emailProviders[0];
 		}
 
 		payload.apiKey = apiKey.key;

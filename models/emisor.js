@@ -14,8 +14,7 @@ const schema = new mongoose.Schema(
 
 				//Email settings
 
-				emailProviders: [{ type: String, trim: true }],
-				defaultEmailProvider: { type: String, trim: true },
+				emailProviders: [{ type: String, trim: true }], //The first one is the default provider
 
 				emailSender: {
 					name: { type: String, trim: true },

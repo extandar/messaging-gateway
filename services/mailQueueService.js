@@ -51,12 +51,6 @@ const service = {
 	  	let message = await this.getNextMessage();
 
 	  	while(message){
-	  	
-		  	if(!message.provider){
-		  		message.provider = MAIL_DEFAULT_PROVIDER;
-		  	}
-
-		  	console.log("message.provider:"+message.provider);
 		  	
 		  	let Provider = require(`./providers/${message.provider}`);
 
