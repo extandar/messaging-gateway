@@ -2,8 +2,6 @@
 'use strict';
 
 const { Emisor, MailQueued, MailSent } = require('../models');
-const MAIL_DEFAULT_PROVIDER = process.env.MAIL_DEFAULT_PROVIDER;
-const MailProvider = require(`./providers/${MAIL_DEFAULT_PROVIDER}`);
 
 var mailServiceStatus = require('../services/mailServiceStatus.js');
 
@@ -35,7 +33,8 @@ const service = {
 				});
 			}
 		}
-		
+
+
 		return message;
 	},
 
@@ -52,11 +51,18 @@ const service = {
 	  	let message = await this.getNextMessage();
 
 	  	while(message){
+	  	
+		  	if(!message.provider){
+		  		message.provider = MAIL_DEFAULT_PROVIDER;
+		  	}
 
-	  		//send the message
-	  		await MailProvider.send(message)
-	  			.then( ()=>{})
-	  			.catch( (error)=>{})
+		  	console.log("message.provider:"+message.provider);
+		  	
+		  	let Provider = require(`./providers/${message.provider}`);
+
+		  	await Provider.send(message)
+		  			.then( ()=>{})
+		  			.catch( (error)=>{})	
 
 	  		//Look for another email
 			message = await this.getNextMessage();

@@ -4,14 +4,11 @@ const nodemailer = require("nodemailer");
 
 const LogService = require('../logService');
 const passwordService = require('../passwordService');
-
 const HandledHtmlError = require('../../exceptions/HandledHtmlError');
-
 const { MailSent } = require('../../models');
+const EmisorService = require('../emisorService');
 
 const PROVIDER = 'smtp';
-
-const EmisorService = require('../emisorService');
 
 const service = {
 
@@ -28,17 +25,17 @@ const service = {
 				.then( apiKey =>{
 				
 					let transporter  = this.prepareTransport(apiKey.emailSender);
-					let smtpMsg = this.prepareSmtpMessage(message);
+					let preparedMessage = this.prepareMessage(message);
 					
 					message = this.processSentMessage(message);
 
 					transporter
-				  	.sendMail(smtpMsg)
+				  	.sendMail(preparedMessage)
 				  	.then( (response) => {
 					  	
 					  	try{
 
-					  		LogService.debug('Message delivered by smtp:'+messageId, null, null, response);
+					  		LogService.debug(`Message delivered by ${PROVIDER}: ${messageId}`, null, null, response);
 
 					  		message.events.push({
 								status:  'delivered',
@@ -72,7 +69,7 @@ const service = {
 							
 
 					  	}catch(error){
-					  		LogService.error('Error processing smpt response:'+messageId, null, null, error);
+					  		LogService.error(`Error processing ${PROVIDER} error: ${messageId}`, null, null, error);
 					  		reject(error);
 					  	}
 
@@ -82,7 +79,7 @@ const service = {
 
 				  		try{
 
-				  			LogService.error('Error sending smtp:'+messageId, null, null, error);
+				  			LogService.error(`Error sending ${PROVIDER}: ${messageId}`, null, null, error);
 
 				  			message.events.push({
 								status:  'errored',
@@ -114,7 +111,7 @@ const service = {
 								})
 
 				  		}catch(error){
-				  			LogService.error('Error processing smpt error:'+messageId, null, null, error);
+				  			LogService.error(`Error sending ${PROVIDER}: error ${messageId}`, null, null, error);
 				  			reject(error);
 				  		}
 				  		
@@ -130,16 +127,16 @@ const service = {
 
 	},
 
-	prepareTransport : function (payload){
+	prepareTransport : function (emailSender){
 
-		let decryptedPassword = passwordService.decrypt(payload.password);
+		let decryptedPassword = passwordService.decrypt(emailSender.password);
 
 		const transporter = nodemailer.createTransport({
-		    host: payload.host,
-		    port: payload.port,
+		    host: emailSender.host,
+		    port: emailSender.port,
 		    secure: true, // true for 465, false for other ports
 		    auth: {
-		      user: payload.email,
+		      user: emailSender.email,
 		      pass: decryptedPassword,
 		    },
 		  });
@@ -147,24 +144,24 @@ const service = {
 
 	},
 
-	prepareSmtpMessage : function (message){
+	prepareMessage : function (message){
 
 		const { messageId, apiKey, from, replyTo, to, cc, bcc, subject, text, html } = message;
 
-		const fromSMTP = from.name?`"${from.name}" <${from.email}>`:from.email;
-		
+		const formattedFrom = from.name?`${from.name}<${from.email}>`:from.email;
+
 		let recipients = []
 		for(let recipient of to){
 			recipients.push(recipient.email.trim());
 		}
 
-		const toSMTP = recipients.join(',');
+		const formattedTo = recipients.join(',');
 
 		//console.log(text)
 
 		let msg = {
-			from: fromSMTP.trim(),
-		  	to: toSMTP.trim(),
+			from: formattedFrom.trim(),
+		  	to: formattedTo.trim(),
 		  	subject: subject,
 		  	text: text,
 		  	html: html,

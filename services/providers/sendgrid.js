@@ -1,25 +1,127 @@
+"use strict";
+
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const LogService = require('../logService');
+const passwordService = require('../passwordService');
 const HandledHtmlError = require('../../exceptions/HandledHtmlError');
-
 const { MailSent } = require('../../models');
+const EmisorService = require('../emisorService');
+
+const PROVIDER = 'sendgrid';
 
 const service = {
 
-	send: async function (message) {
+	send: function (message) {
 
-		console.log("Sending from Sengrid provider");
+		console.log("Sending from Sendgrid provider...");
 		
-
 		const lang = 'en';
-		const { _id, from, replyTo, to, cc, bcc, subject, text, html, template, templateData } = message;
+		const { messageId, apiKey, from, replyTo, to, cc, bcc, subject, text, html } = message;
 		
+		return new Promise((resolve, reject) => {
 
-		const msg = {
-			from: from,
-		  	to: to,
+			EmisorService.getApiKey(apiKey)
+				.then( apiKey =>{
+				
+					let transporter  = this.prepareTransport(apiKey.emailSender);
+					let preparedMessage = this.prepareMessage(message);
+					
+					message = this.processSentMessage(message);
+
+					if(!transporter){
+						throw new HandledHtmlError("ErroredTransport");
+					}
+
+					transporter
+				  	.send(preparedMessage)
+				  	.then( (response) => {
+					  	
+					  	try{
+
+					  		LogService.debug(`Message delivered by ${PROVIDER}: ${messageId}`, null, null, response);
+
+					  		message.events.push({
+								status:  'delivered',
+								date: new Date(),
+								info: response
+							})
+							message.status = 'delivered';
+							message.messageIdProvider = response.messageId;
+
+							let messageCopy = message.toJSON();
+							delete messageCopy._id;
+
+							let sent = new MailSent(messageCopy);
+							sent.save()
+								.then( (createdDocument) => {
+
+									message.delete()
+										.then( (deletedDocument) =>{
+											resolve(response);
+										})
+										.catch(error => {
+											LogService.error('Error deleting delivered MailQueued:'+messageId, null, null, error);
+											reject(error);
+										})
+
+								})
+								.catch(error=>{
+									LogService.error('Error saving delivered MailSent:'+messageId, null, null, error);
+									reject(error);
+								})
+							
+
+					  	}catch(error){
+
+					  		LogService.error(`Error processing ${PROVIDER}: ${messageId}`, null, null, error);
+					  		reject(error);
+					  	}
+
+
+				  	})
+				  	.catch( error => {
+
+			  			LogService.error(`Error sending ${PROVIDER}: ${messageId}`, null, null, error);
+			  			message = this.processErroredMessage(message, error);
+			  			reject(error);	
+				  	})
+				})
+				.catch( error => {
+
+					LogService.error('Error retrieving apiKey:'+messageId, null, null, error);
+					message = this.processErroredMessage(message, error);
+					reject(error);
+				})
+
+		});
+
+	},
+
+	prepareTransport : function (emailSender){
+
+		return sgMail.setApiKey(emailSender.apiKey);
+
+	},
+
+	prepareMessage : function (message){
+
+		const { messageId, apiKey, from, replyTo, to, cc, bcc, subject, text, html } = message;
+
+		const formattedFrom = from.name?`${from.name}<${from.email}>`:from.email;
+		
+		let recipients = []
+		for(let recipient of to){
+			recipients.push(recipient.email.trim());
+		}
+
+		const formattedTo = recipients.join(',');
+
+		//console.log(text)
+
+		let msg = {
+			from: formattedFrom.trim(),
+		  	to: formattedTo.trim(),
 		  	subject: subject,
 		  	text: text,
 		  	html: html,
@@ -37,90 +139,65 @@ const service = {
 			msg.bcc = bcc
 		}
 
-		if(template){
-			msg.template_id = template
-			msg.personalizations = [
-				{
-					to: to,
-					dynamic_template_data: templateData
+		return msg;
 
-				}
-			]
-		}
+	},
 
+	processSentMessage : function (message){
+		
 		message.events.push({
 			status:  'sent',
 			date: new Date()
 		})
+
 		message.status = 'sent';
-
-		//console.log(msg)
 		
-		await message.save();
+		message.save()
+			.then(( document )=>{
+				LogService.debug('Message sent for delivery sendgrid:'+message.messageId);
+			})
+			.catch(error=>{
+				LogService.error('Error saving sent MailSent:'+message.messageId, null, null, error);
+			})
 
-		
-		//ES6
-		await sgMail
-		  .send(msg)
-		  .then( async (response) => {
-
-			  	try{
-			  		message.events.push({
-						status:  'delivered',
-						date: new Date(),
-						info: response
-					})
-					message.status = 'delivered';
-
-					let messageCopy = message.toJSON();
-					delete messageCopy._id;
-
-					let sent = new MailSent(messageCopy);
-					sent.provider = 'sendgrid';
-					await sent.save();
-					await message.delete();
-
-			  		LogService.debug("Mensaje enviado por Sendgrid", 'MailSentBySendgrid' , null, response);
-			  	}catch(err){
-			  		console.error(err);
-			  	}
-		  		
-		  	}, async (error) => {
-		  		
-		  		try{
-		  			message.events.push({
-						status:  'errored',
-						date: new Date(),
-						info: error
-					})
-					message.status = 'errored';
-
-					let messageCopy = message.toJSON();
-					delete messageCopy._id;
-
-					let sent = new MailSent(messageCopy);
-					sent.provider = 'sendgrid';
-					await sent.save();
-					await message.delete();
-
-			    	let err = new HandledHtmlError('ProviderError', lang, error);
-				    if (error.response) {
-	          			LogService.error(err.message, err.errorCode, null, error.response.body);
-				    }else{
-				    	LogService.error(err.message, err.errorCode, null, error);
-				    }
-		  		}catch(err){
-		  			console.error(err);
-		  		}
-		  		
-
-		  });
-
+		return message;
 	},
+
+
+	processErroredMessage : function (message, error){
+
+		message.events.push({
+			status:  'errored',
+			date: new Date(),
+			info: error
+		})
+		message.status = 'errored';
+
+		let messageCopy = message.toJSON();
+		delete messageCopy._id;
+
+		let sent = new MailSent(messageCopy);
+		
+		sent.save()
+			.then( (createdDocument) => {
+
+				message.delete()
+					.then( (deletedDocument) => {
+						LogService.debug('deleted MailQueued:'+message.messageId);
+					})
+					.catch(error => {
+						LogService.error('Error deleting errored MailQueued:'+message.messageId, null, null, error);
+					})
+
+			})
+			.catch(error => {
+				LogService.error('Error saving errored MailSent:'+message.messageId, null, null, error);
+			})
+
+	}
+
+
 
 }
  
 module.exports = service;
-
-
-

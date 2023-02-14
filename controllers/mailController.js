@@ -20,7 +20,7 @@ exports.enqueue = function(req, res) {
 		}
 
 		const { body } = req;
-
+console.log(body);
 		if(!body.from || !body.from.email){
 			throw new HandledHtmlError("FromRequired", lang);
 		}
@@ -76,12 +76,14 @@ exports.enqueue = function(req, res) {
 
 		if(body.provider){
 
-			if(apiKey.emailProviders.contains(body.provider)){
+			if(apiKey.emailProviders.includes(body.provider)){
 				payload.provider = body.provider;
 			}else{
-				payload.provider = apiKey.defaultEmailProvider;
+				throw new HandledHtmlError("NotAllowedProvider", lang);
 			}
-
+			
+		}else{
+			payload.provider = apiKey.defaultEmailProvider;
 		}
 
 		payload.apiKey = apiKey.key;

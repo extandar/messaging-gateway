@@ -23,7 +23,8 @@ class HandledHtmlError extends Error {
 		
 		super(message);
 		this.htmlCode = error.htmlCode;
-		this.errorCode = error.errorCode;
+		
+		this.errorCode = errorCode;
 		this.previousError = previousError;
 	}
 
