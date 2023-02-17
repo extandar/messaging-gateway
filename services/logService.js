@@ -16,7 +16,7 @@ const service = {
 		let logData = this.makeData(message, req, data);
 		
 		if(infoTransport == 'console'){
-			console.info([level,eventCode,logData]);
+			console.info(level,eventCode,logData);
 		}else{
 			this.log(level, eventCode, logData);
 		}
@@ -29,7 +29,7 @@ const service = {
 		let logData = this.makeData(message, req, data);
 		
 		if(warnTransport == 'console'){
-			console.warn([level,eventCode,logData]);
+			console.warn(level,eventCode,logData);
 		}else{
 			this.log(level, eventCode, logData);
 		}
@@ -42,7 +42,7 @@ const service = {
 		let logData = this.makeData(message, req, data);
 
 		if(errorTransport == 'console'){
-			console.error([level,eventCode,logData]);
+			console.error(level,eventCode,logData);
 			if(data.previousError){
 				console.error(data.previousError);	
 			}
@@ -59,7 +59,7 @@ const service = {
 		let logData = this.makeData(message, req, data);
 		
 		if(debugTransport == 'console'){
-			console.debug([level,eventCode,logData]);
+			console.debug(level,eventCode,logData.message,logData.time,logData.body,logData.data);
 		}else{
 			this.log(level, eventCode, logData);
 		}
