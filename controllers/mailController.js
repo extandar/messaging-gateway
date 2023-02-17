@@ -68,6 +68,10 @@ exports.enqueue = function(req, res) {
 
 		if(body.templateData){
 			payload.templateData = body.templateData;
+		}
+
+		if(body.tags){
+			payload.tags = body.tags;
 		}	
 
 		payload.schedule = req.body.schedule ? new Date(req.body.schedule) : new Date();
