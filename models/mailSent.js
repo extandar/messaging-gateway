@@ -12,6 +12,8 @@ const schema = new mongoose.Schema(
 		provider: { type: String, trim: true },
 		messageIdProvider: { type: String, trim: true, index: true },
 
+		tags: [ String ],
+		
 		from: {
 			email: { type: String, trim: true, required: true, index: true },
 			name: { type: String, trim: true },

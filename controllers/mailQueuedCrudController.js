@@ -123,6 +123,10 @@ exports.createOneMailQueued = function(req, res) {
 			payload.messageIdProvider = body.messageIdProvider;
 		}
 				
+		if(body.tags){
+			payload.tags = body.tags;
+		}
+				
 		if(body.from){
 			payload.from = body.from;
 		}
@@ -243,6 +247,10 @@ exports.updateOneMailQueued = async function(req, res) {
 				
 		if(body.messageIdProvider){
 			payload.messageIdProvider = body.messageIdProvider;
+		}
+				
+		if(body.tags){
+			payload.tags = body.tags;
 		}
 				
 		if(body.from){
