@@ -39,15 +39,42 @@ const service = {
 					  	
 					  	try{
 
-					  		LogService.debug(`Message delivered by ${PROVIDER}: ${messageId}`, null, null, response);
+					  		LogService.debug(`Message delivered by ${PROVIDER}: ${messageId}`);
+					  		
+					  		if(response instanceof Array){
+					  			//Because sendgrid response is an Array 
+						  		if(response && response.length>0){
+						  			response = response[0];
+						  		}
+					  		}
 
-					  		message.events.push({
-								status:  'delivered',
+					  		if( !response.statusCode ){
+					  			console.error('FATAL - statusCode unknown:')
+					  		}
+
+					  		let event = {
 								date: new Date(),
 								info: response
-							})
-							message.status = 'delivered';
-							message.messageIdProvider = response.messageId;
+							}
+
+							if(response.statusCode == '202'){
+								event.status = 'delivered';
+								message.status = 'delivered';
+							}else{
+								event.status = 'errored';
+								message.status = 'errored';
+							}
+
+					  		let providerMessageId = null;
+
+					  		if( response.headers ){
+								if(response.headers['x-message-id']){
+									providerMessageId = response.headers['x-message-id'];
+								}
+					  		}
+
+					  		message.events.push(event);
+							message.messageIdProvider = providerMessageId;
 
 							let messageCopy = message.toJSON();
 							delete messageCopy._id;

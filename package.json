@@ -1,6 +1,6 @@
 {
   "name": "Messaging Gateway",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Gateway for email, sms, and other messaging transports",
   "main": "server.js",
   "scripts": {
